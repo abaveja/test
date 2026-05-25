@@ -1,0 +1,468 @@
+sections:
+  section-1758730459419-1:
+    description: High level details around files submitted to QuickScan Pro
+    collapsed: false
+    widgetIds:
+    - efc2c766-186b-465a-8079-618636607d9b
+    - 13f499e2-3202-4715-9253-4d558dfee0b5
+    - 70e7b2aa-ab9e-4614-9115-d4e2e7cc41ab
+    - de06f040-ee76-4049-8970-321e523715e8
+    order: 0
+    title: QuickScan Pro Submission Overview
+  section-1758730544418-2:
+    description: Highlights key areas used when creating the verdict, but will not
+      include everything.
+    collapsed: false
+    widgetIds:
+    - 1a6feb0b-1b11-4cf0-8f96-8652de083992
+    - fb709abb-0fba-4ef0-ba2d-1c19102c061c
+    - bac32ee6-4160-4acf-a38a-a303c2ad63d1
+    - 75094f17-e08c-4f9d-b073-1a5c69c4346b
+    - e87ee61c-0431-434e-9f32-11c007825800
+    order: 1
+    title: Verdict Highlights
+  section-1758734719068-0:
+    collapsed: true
+    order: 2
+    title: YARA Details
+    widgetIds:
+    - 562cbb8f-a639-47f9-9a9b-38dcda25e449
+    - f8da22b4-83e5-4d5c-92aa-041c40575c35
+  section-1758735160576-0:
+    collapsed: true
+    order: 3
+    title: Mitre Attack
+    widgetIds:
+    - a88934f6-2abe-456f-90a8-de2c20b43976
+name: qsp - hensa
+updateFrequency: never
+timeSelector: {}
+sharedTimeInterval:
+  enabled: true
+  isLive: false
+  start: 30d
+widgets:
+  75094f17-e08c-4f9d-b073-1a5c69c4346b:
+    x: 6
+    description: 'YARA used as part of the verdict reason  '
+    height: 4
+    queryString: |-
+      #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+      | regex("YARA", field=result.verdict_reason, flags=i)
+      | detection_method := "YARA"
+      | count()
+    end: now
+    start: 7d
+    width: 3
+    y: 0
+    interactions:
+    - name: Drill Down
+      queryString: |-
+        #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+        | regex("YARA", field=result.verdict_reason, flags=i)
+        | detection_method := "YARA"
+        | table([@timestamp, sha256, result.verdict, result.malicious_confidence, params.file_name, result.verdict_reason, detection_method, submission_id])
+        | sort(@timestamp, order=desc)
+      useWidgetTimeWindow: true
+      arguments: {}
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    options:
+      default: {}
+    visualization: single-value
+    title: YARA
+    isLive: false
+    type: query
+  f8da22b4-83e5-4d5c-92aa-041c40575c35:
+    x: 0
+    description: YARA signatures primarily used against file artifacts in combination
+      to potentially arrive at a verdict.
+    height: 13
+    queryString: |
+      #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+      | regex("indicator\":\"YARA signature match - (?<yara_signature>[^\"]+)\"", field=@rawstring, flags=i)
+      | groupBy([sha256, yara_signature])
+      | sankey(source=sha256, target=yara_signature)
+    visualization: sankey
+    end: now
+    start: 30d
+    width: 12
+    y: 7
+    interactions:
+    - name: All Results
+      queryString: "#event_simpleName=MalwareAnalysisPlatformQuickScanProResult \n\
+        | regex(\"indicator\\\":\\\"YARA signature match - (?<yara_signature>[^\\\"\
+        ]+)\\\"\",field=@rawstring,flags=i) "
+      useWidgetTimeWindow: true
+      arguments: {}
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    - name: Drill Down
+      queryString: "#event_simpleName=MalwareAnalysisPlatformQuickScanProResult |\
+        \ regex(\"indicator\\\":\\\"YARA signature match - (?<yara_signature>[^\\\"\
+        ]+)\\\"\",field=@rawstring,flags=i) | yara_signature=?yara_signature sha256=?sha256\
+        \ \n| table([@timestamp, sha256, result.verdict, result.malicious_confidence,\
+        \ params.file_name, result.verdict_reason, yara_signature, submission_id])\n\
+        | sort(@timestamp, order=desc)"
+      useWidgetTimeWindow: true
+      arguments:
+        sha256: '["{{ fields.source }}"]'
+        yara_signature: '["{{ fields.target }}"]'
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    title: 'YARA Signatures - Artifacts '
+    isLive: false
+    type: query
+  562cbb8f-a639-47f9-9a9b-38dcda25e449:
+    x: 0
+    description: YARA rules used within the primary verdict
+    height: 7
+    queryString: |
+      #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+      | regex("Match on yara rule (?<yara_rule>[^.]+)\.", field=result.verdict_reason, flags=i)
+      | groupBy([sha256, yara_rule])
+      | sankey(source=sha256, target=yara_rule)
+    visualization: sankey
+    end: now
+    start: 30d
+    width: 12
+    y: 0
+    interactions:
+    - name: All Results
+      queryString: |-
+        #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+        | regex("Match on yara rule (?<yara_rule>[^.]+)\.", field=result.verdict_reason, flags=i)
+      useWidgetTimeWindow: true
+      arguments: {}
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    - name: Drill Down
+      queryString: "// Suggested go to events query - may be incorrect for complex\
+        \ queries \n#event_simpleName=MalwareAnalysisPlatformQuickScanProResult \n\
+        | regex(\"Match on yara rule (?<yara_rule>[^.]+)\\\\.\",field=result.verdict_reason,flags=i)\
+        \ \n| yara_rule=?yara_rule sha256=?sha256 \n| table([@timestamp, sha256, result.verdict,\
+        \ result.malicious_confidence, params.file_name, result.verdict_reason, yara_rule,\
+        \ submission_id])\n| sort(@timestamp, order=desc)"
+      useWidgetTimeWindow: true
+      arguments:
+        sha256: '["{{ fields.source }}"]'
+        yara_rule: '["{{ parameters.yara_rule }}"]'
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    title: YARA Matchs - Verdict
+    isLive: false
+    type: query
+  efc2c766-186b-465a-8079-618636607d9b:
+    x: 0
+    description: Distribution of verdict based on the submission files
+    height: 5
+    queryString: |-
+      #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+      | groupBy(result.verdict)
+    end: now
+    start: 7d
+    width: 8
+    y: 4
+    interactions:
+    - name: All Results
+      queryString: '#event_simpleName=MalwareAnalysisPlatformQuickScanProResult'
+      useWidgetTimeWindow: true
+      arguments: {}
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    - name: Drill Down
+      queryString: "#event_simpleName=MalwareAnalysisPlatformQuickScanProResult \n\
+        | result.verdict=?result_verdict \n| table([@timestamp, sha256, result.verdict,\
+        \ result.malicious_confidence, params.file_name, result.verdict_reason, submission_id])\n\
+        | sort(@timestamp, order=desc)"
+      useWidgetTimeWindow: true
+      arguments:
+        result_verdict: '["{{fields.result.verdict}}"]'
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    options:
+      legendTitle: Verdict
+      series:
+        likely_benign:
+          color: '#2ECC71'
+          title: Likely Benign
+        suspicious:
+          color: '#E67E22'
+          title: Suspicious
+        clean:
+          color: '#FFFFFF'
+          title: Clean
+        unknown:
+          color: '#7F8C8D'
+          title: Unknown
+        malicious:
+          color: '#C0392B'
+          title: Malicious
+      legend: true
+      enableTrellis: false
+      withLegendTitle: true
+    visualization: pie-chart
+    title: Verdict Distribution
+    isLive: false
+    type: query
+  bac32ee6-4160-4acf-a38a-a303c2ad63d1:
+    x: 9
+    description: Threat used as part of the verdict reason which normally means a
+      named threat has been identified.
+    height: 4
+    queryString: |-
+      #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+      | regex("Threat", field=result.verdict_reason, flags=i)
+      | detection_method := "Threat"
+      | count()
+    end: now
+    start: 30d
+    width: 3
+    y: 0
+    interactions:
+    - name: Drill Down
+      queryString: |-
+        #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+        | regex("Threat", field=result.verdict_reason, flags=i)
+        | detection_method := "Threat"
+        | table([@timestamp, sha256, result.verdict, result.malicious_confidence, params.file_name, result.verdict_reason, detection_method, submission_id])
+        | sort(@timestamp, order=desc)
+      useWidgetTimeWindow: true
+      arguments: {}
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    options:
+      default: {}
+    visualization: single-value
+    title: Threat Identified
+    isLive: false
+    type: query
+  e87ee61c-0431-434e-9f32-11c007825800:
+    x: 0
+    height: 8
+    queryString: |-
+      #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+      | groupBy(result.verdict_reason)
+      | sort(_count, order=desc)
+      | rename(result.verdict_reason, as="Verdict Reason")
+      | rename(_count, as="Count")
+      | table([Count, "Verdict Reason"])
+    end: now
+    start: 30d
+    width: 12
+    y: 4
+    interactions:
+    - name: Drill Down
+      queryString: "// Suggested go to events query - may be incorrect for complex\
+        \ queries \n#event_simpleName=MalwareAnalysisPlatformQuickScanProResult |\
+        \ Verdict Reason=?Verdict_Reason "
+      useWidgetTimeWindow: true
+      arguments:
+        Verdict_Reason: '["{{fields.Verdict Reason}}"]'
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    options:
+      cell-overflow: wrap-text
+      configured-columns: {}
+      row-numbers-enabled: false
+    visualization: table-view
+    title: Verdict Reason Details
+    isLive: false
+    type: query
+  1a6feb0b-1b11-4cf0-8f96-8652de083992:
+    x: 3
+    description: Verdict reasons that contain a C2 configuration
+    height: 4
+    queryString: |-
+      #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+      | regex("C2 Configuration", field=result.verdict_reason, flags=i)
+      | detection_method := "C2 Configuration"
+      | count()
+    end: now
+    start: 2d
+    width: 3
+    y: 0
+    interactions:
+    - name: Drill Down
+      queryString: |-
+        #event_simpleName=MalwareAnalysisPlatformQuickScanProResult | regex("C2 Configuration",field=result.verdict_reason,flags=i) | detection_method := "C2 Configuration"
+        | table([@timestamp, sha256, result.verdict, result.malicious_confidence, params.file_name, result.verdict_reason, detection_method, submission_id])
+        | sort(@timestamp, order=desc)
+      useWidgetTimeWindow: true
+      arguments: {}
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    options:
+      default: {}
+    visualization: single-value
+    title: C2 Configuration
+    isLive: false
+    type: query
+  13f499e2-3202-4715-9253-4d558dfee0b5:
+    x: 8
+    description: How the file was submitted to QSP
+    height: 5
+    queryString: |-
+      #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+      | groupBy(origin)
+    end: now
+    start: 30d
+    width: 4
+    y: 4
+    interactions:
+    - name: All Results
+      queryString: "#event_simpleName=MalwareAnalysisPlatformQuickScanProResult \n\
+        | origin=*"
+      useWidgetTimeWindow: true
+      arguments: {}
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    - name: Drill Down
+      queryString: "#event_simpleName=MalwareAnalysisPlatformQuickScanProResult \n\
+        | origin=?origin \n| table([@timestamp, origin, sha256, result.verdict, result.malicious_confidence,\
+        \ params.file_name, result.verdict_reason, submission_id])\n| sort(@timestamp,\
+        \ order=desc)"
+      useWidgetTimeWindow: true
+      arguments:
+        origin: '["{{fields.origin}}"]'
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    options:
+      legendTitle: Source
+      series:
+        apigateway:
+          title: API Submission
+        uiproxy:
+          title: Manual Submission
+    visualization: pie-chart
+    title: Submission Source
+    isLive: false
+    type: query
+  fb709abb-0fba-4ef0-ba2d-1c19102c061c:
+    x: 0
+    description: Looks for adversary family names within the detection verdict reason
+    height: 4
+    queryString: |
+      #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+      | regex("(?<adversary_family>Bear|Tiger|Panda|Spider|Kitten|Jackal|Lynx|Ocelot|Chollima|Buffalo|Crane|Leopard|Wolf|Fox|Hawk|Eagle|Viper|Cobra|Python|Gecko|Lizard|Turtle|Shark|Whale|Dolphin|Octopus|Squid)", field=result.verdict_reason, flags=i)
+      | detection_method := "Adversary Family"
+      | count()
+    end: now
+    start: 2d
+    width: 3
+    y: 0
+    interactions:
+    - name: Drill Down
+      queryString: |-
+        #event_simpleName=MalwareAnalysisPlatformQuickScanProResult | regex("(?<adversary_family>Bear|Tiger|Panda|Spider|Kitten|Jackal|Lynx|Ocelot|Chollima|Buffalo|Crane|Leopard|Wolf|Fox|Hawk|Eagle|Viper|Cobra|Python|Gecko|Lizard|Turtle|Shark|Whale|Dolphin|Octopus|Squid)",field=result.verdict_reason,flags=i) | detection_method := "Adversary Family"
+        | table([@timestamp, sha256, result.verdict, result.malicious_confidence, params.file_name, result.verdict_reason, detection_method, submission_id])
+        | sort(@timestamp, order=desc)
+      useWidgetTimeWindow: true
+      arguments: {}
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    options:
+      default: {}
+    visualization: single-value
+    title: Adversary Family
+    isLive: false
+    type: query
+  de06f040-ee76-4049-8970-321e523715e8:
+    x: 4
+    description: Submissions to QSP per day
+    height: 4
+    queryString: |-
+      #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+      | timeChart(span=1d)
+    end: now
+    start: 30d
+    width: 8
+    y: 0
+    interactions:
+    - name: 'Interaction #1'
+      urlEncodeArgs: true
+      urlTemplate: ''
+      openInNewTab: false
+      type: customlink
+    options:
+      connect-points: false
+      imputation: none
+      series:
+        _count:
+          title: Submission Count
+    visualization: time-chart
+    title: Submission Frequency
+    isLive: false
+    type: query
+  70e7b2aa-ab9e-4614-9115-d4e2e7cc41ab:
+    x: 0
+    description: Count QuickScan Pro submission results
+    height: 4
+    queryString: |-
+      | "#event_simpleName" = MalwareAnalysisPlatformQuickScanProResult
+      | count()
+    end: now
+    start: 30d
+    width: 4
+    y: 0
+    interactions:
+    - name: Total Submissions
+      queryString: "// Suggested go to events query - may be incorrect for complex\
+        \ queries \n\"#event_simpleName\"=MalwareAnalysisPlatformQuickScanProResult"
+      useWidgetTimeWindow: true
+      arguments: {}
+      openInNewTab: false
+      isLive: false
+      type: searchlink
+    options:
+      default: {}
+    visualization: single-value
+    title: Total Submission
+    isLive: false
+    type: query
+  a88934f6-2abe-456f-90a8-de2c20b43976:
+    x: 0
+    y: 0
+    description: Mitre Techniques from QSP submissions
+    height: 10
+    queryString: |
+      #event_simpleName=MalwareAnalysisPlatformQuickScanProResult
+      | regex("technique\":\"(?<technique>[^\"]+)")
+      | regex("attack_id\":\"(?<attack_id>T[^\"]+)")
+      | groupBy([technique, attack_id])
+      | sort(_count, order=desc)
+    end: now
+    start: 30d
+    width: 12
+    options:
+      legendTitle: Mitre Techniques
+      withLegendTitle: true
+    visualization: pie-chart
+    title: Techniques
+    isLive: false
+    type: query
+$schema: https://schemas.humio.com/dashboard/v0.23.0
+parameters:
+  new-param:
+    defaultValue: '*'
+    order: 50
+    type: text
+    width: 1
+  new-param-1:
+    defaultValue: '*'
+    order: 51
+    type: text
+    width: 1
